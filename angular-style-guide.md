@@ -181,33 +181,165 @@ Correct examples:
 
 ## Application structure and NgModules
 
-## LIFT
+Have a near-term view of implementation and a long-term vision. Start small but keep in mind where the app is heading down the road.
 
-## Locate
+All of the app's code goes in a folder named `src`. All feature areas are in their own folder, with their own NgModule.
 
-## Identify
+All content is one asset per file. Each component, service, and pipe is in its own file. All third party vendor scripts are stored in another folder and not in the `src` folder. You didn't write them and you don't want them cluttering src. Use the naming conventions for files in this guide.
 
-## Flat
+### *LIFT*
 
-## T-DRY (Try to be DRY)
+**Do** structure the app such that you can Locate code quickly, Identify the code at a glance, keep the Flattest structure you can, and Try to be DRY.
 
-## Overall structural guidelines
+**Do** define the structure to follow these four basic guidelines, listed in order of importance.
 
-## Folders-by-feature structure
+### Locate
 
-## App root module
+**Do** make locating code intuitive, simple and fast.
 
-## Feature modules
+### Identify
 
-## Shared feature module
+**Do** name the file such that you instantly know what it contains and represents.
 
-## Core feature module
+**Do** be descriptive with file names and keep the contents of the file to exactly one component.
 
-## Prevent re-import of the core module
+**Avoid** files with multiple components, multiple services, or a mixture.
 
-## Lazy Loaded folders
+### Flat
+
+**Do** keep a flat folder structure as long as possible.
+
+**Consider** creating sub-folders when a folder reaches seven or more files.
+
+**Consider** configuring the IDE to hide distracting, irrelevant files such as generated `.js` and `.js.map` files.
+
+### T-DRY (Try to be DRY)
+
+**Do** be DRY (Don't Repeat Yourself).
+
+**Avoid** being so DRY that you sacrifice readability.
+
+### Overall structural guidelines
+
+**Do** start small but keep in mind where the app is heading down the road.
+
+**Do** have a near term view of implementation and a long term vision.
+
+**Do** put all of the app's code in a folder named src.
+
+**Consider** creating a folder for a component when it has multiple accompanying files (`.ts`, `.html`, `.css` and `.spec`).
+
+### Folders-by-feature structure
+
+**Do** create folders named for the feature area they represent.
+
+**Do** create an NgModule for each feature area.
+
+### App root module
+
+**Do** create an NgModule in the app's root folder, for example, in `/src/app`.
+
+**Consider** naming the root module `app.module.ts`.
+
+### Feature modules
+
+**Do** create an NgModule for all distinct features in an application; for example, a `Heroes` feature.
+
+**Do** place the feature module in the same named folder as the feature area; for example, in `app/heroes`.
+
+**Do** name the feature module file reflecting the name of the feature area and folder; for example, `app/heroes/heroes.module.ts`.
+
+**Do** name the feature module symbol reflecting the name of the feature area, folder, and file; for example, `app/heroes/heroes.module.ts` defines `HeroesModule`.
+
+### Shared feature module
+
+**Do** create a feature module named `SharedModule` in a shared folder; for example, `app/shared/shared.module.ts` defines `SharedModule`.
+
+**Do** declare components, directives, and pipes in a shared module when those items will be re-used and referenced by the components declared in other feature modules.
+
+**Consider** using the name `SharedModule` when the contents of a shared module are referenced across the entire application.
+
+**Consider** not providing services in shared modules. Services are usually singletons that are provided once for the entire application or in a particular feature module. There are exceptions, however. For example, in the sample code that follows, notice that the `SharedModule` provides `FilterTextService`. This is acceptable here because the service is stateless; that is, the consumers of the service aren't impacted by new instances.
+
+**Do** import all modules required by the assets in the `SharedModule`; for example, `CommonModule` and `FormsModule`.
+
+**Do declare all components, directives, and pipes in the `SharedModule`.
+
+**Do** export all symbols from the `SharedModule` that other feature modules need to use.
+
+**Avoid** specifying app-wide singleton providers in a `SharedModule`. Intentional singletons are OK. Take care.
+
+### Core feature module
+
+**Consider** collecting numerous, auxiliary, single-use classes inside a core module to simplify the apparent structure of a feature module.
+
+**Consider** calling the application-wide core module, `CoreModule`. Importing `CoreModule` into the root `AppModule` reduces its complexity and emphasizes its role as orchestrator of the application as a whole.
+
+**Do** create a feature module named `CoreModule` in a core folder (e.g. app/core/core.module.ts defines `CoreModule`).
+
+**Do** put a singleton service whose instance will be shared throughout the application in the `CoreModule` (e.g. `ExceptionService` and `LoggerService`).
+
+**Do** import all modules required by the assets in the `CoreModule` (e.g. `CommonModule` and `FormsModule`).
+
+**Do** gather application-wide, single use components in the `CoreModule`. Import it once (in the `AppModule`) when the app starts and never import it anywhere else. (e.g. `NavComponent` and `SpinnerComponent`).
+
+**Avoid** importing the `CoreModule` anywhere except in the `AppModule`.
+
+**Do** export all symbols from the `CoreModule` that the `AppModule` will import and make available for other feature modules to use.
+
+### Prevent re-import of the core module
+
+Only the root `AppModule` should import the `CoreModule`.
+
+Do guard against reimporting of `CoreModule` and fail fast by adding guard logic.
+
+Example of how to do so below:
+
+```
+app/core/module-import-guard.ts
+
+export function throwIfAlreadyLoaded(parentModule: any, moduleName: string) {
+  if (parentModule) {
+    throw new Error(`${moduleName} has already been loaded. Import Core modules in the AppModule only.`);
+  }
+}
+```
+```
+app/core/core.module.ts
+
+import { NgModule, Optional, SkipSelf } from '@angular/core';
+import { CommonModule } from '@angular/common';
+
+import { LoggerService } from './logger.service';
+import { NavComponent } from './nav/nav.component';
+import { throwIfAlreadyLoaded } from './module-import-guard';
+
+@NgModule({
+  imports: [
+    CommonModule // we use ngFor
+  ],
+  exports: [NavComponent],
+  declarations: [NavComponent],
+  providers: [LoggerService]
+})
+export class CoreModule {
+  constructor( @Optional() @SkipSelf() parentModule: CoreModule) {
+    throwIfAlreadyLoaded(parentModule, 'CoreModule');
+  }
+}
+```
+
+### Lazy Loaded folders
+
+A distinct application feature or workflow may be *lazy loaded* or *loaded on demand* rather than when the application starts.
+
+Do put the contents of *lazy loaded* features in a *lazy loaded* folder. A typical *lazy loaded* folder contains a *routing component*, its child components, and their related assets and modules.
 
 ## Never directly import lazy loaded folders
+
+**Avoid** allowing modules in sibling and parent folders to directly import a module in a *lazy loaded feature*.
+
+**Why?** Directly importing and using a module will load it immediately when the intention is to load it on demand.
 
 ## Components
 
